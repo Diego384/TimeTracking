@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell.exe -Command \"cd ''C:\\\\Users\\\\diego\\\\Documents\\\\CoopOltreiSogniApps\\\\TimeTracking''; flutter analyze 2>&1\")",
+      "Bash(powershell.exe -Command \"Get-ChildItem -Recurse ''C:\\\\Users\\\\diego\\\\Documents\\\\CoopOltreiSogniApps\\\\TimeTracking\\\\lib'' -Filter ''*.dart'' | Select-Object FullName\")",
+      "Bash(powershell.exe -Command \"Remove-Item -Force ''C:\\\\Users\\\\diego\\\\Documents\\\\CoopOltreiSogniApps\\\\TimeTracking\\\\lib\\\\app.dart'' -ErrorAction SilentlyContinue; Remove-Item -Recurse -Force ''C:\\\\Users\\\\diego\\\\Documents\\\\CoopOltreiSogniApps\\\\TimeTracking\\\\lib\\\\core'' -ErrorAction SilentlyContinue; Remove-Item -Force ''C:\\\\Users\\\\diego\\\\Documents\\\\CoopOltreiSogniApps\\\\TimeTracking\\\\lib\\\\models\\\\day_entry.dart'' -ErrorAction SilentlyContinue; Remove-Item -Force ''C:\\\\Users\\\\diego\\\\Documents\\\\CoopOltreiSogniApps\\\\TimeTracking\\\\lib\\\\models\\\\leave_type.dart'' -ErrorAction SilentlyContinue; Remove-Item -Force ''C:\\\\Users\\\\diego\\\\Documents\\\\CoopOltreiSogniApps\\\\TimeTracking\\\\lib\\\\models\\\\user_profile.dart'' -ErrorAction SilentlyContinue; Remove-Item -Force ''C:\\\\Users\\\\diego\\\\Documents\\\\CoopOltreiSogniApps\\\\TimeTracking\\\\lib\\\\providers\\\\calendar_state_provider.dart'' -ErrorAction SilentlyContinue; Remove-Item -Force ''C:\\\\Users\\\\diego\\\\Documents\\\\CoopOltreiSogniApps\\\\TimeTracking\\\\lib\\\\providers\\\\day_entry_provider.dart'' -ErrorAction SilentlyContinue; Remove-Item -Force ''C:\\\\Users\\\\diego\\\\Documents\\\\CoopOltreiSogniApps\\\\TimeTracking\\\\lib\\\\providers\\\\hive_providers.dart'' -ErrorAction SilentlyContinue; Remove-Item -Force ''C:\\\\Users\\\\diego\\\\Documents\\\\CoopOltreiSogniApps\\\\TimeTracking\\\\lib\\\\providers\\\\user_profile_provider.dart'' -ErrorAction SilentlyContinue; Remove-Item -Recurse -Force ''C:\\\\Users\\\\diego\\\\Documents\\\\CoopOltreiSogniApps\\\\TimeTracking\\\\lib\\\\screens\\\\calendar'' -ErrorAction SilentlyContinue; Remove-Item -Recurse -Force ''C:\\\\Users\\\\diego\\\\Documents\\\\CoopOltreiSogniApps\\\\TimeTracking\\\\lib\\\\screens\\\\day_entry'' -ErrorAction SilentlyContinue; Remove-Item -Recurse -Force ''C:\\\\Users\\\\diego\\\\Documents\\\\CoopOltreiSogniApps\\\\TimeTracking\\\\lib\\\\screens\\\\monthly_summary'' -ErrorAction SilentlyContinue; Remove-Item -Recurse -Force ''C:\\\\Users\\\\diego\\\\Documents\\\\CoopOltreiSogniApps\\\\TimeTracking\\\\lib\\\\screens\\\\setup'' -ErrorAction SilentlyContinue; Write-Host ''Fatto''\")",
+      "Bash(powershell.exe -Command \"cd ''C:\\\\Users\\\\diego\\\\Documents\\\\CoopOltreiSogniApps\\\\TimeTracking''; flutter run -d chrome 2>&1\")",
+      "Read(//c/Android/**)",
+      "Read(//c/Users/diego/AppData/Local/**)",
+      "Bash(powershell.exe -Command \"flutter devices 2>&1\")",
+      "Bash(powershell.exe -Command \"flutter devices --device-timeout 5 2>&1\")",
+      "Bash(flutter run:*)",
+      "Bash(flutter pub:*)",
+      "Bash(flutter build:*)",
+      "Bash(python -m pip install -r requirements.txt)",
+      "Bash(python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8000/login)",
+      "Bash(curl -s http://localhost:8000/login)",
+      "Bash(python -c \":*)",
+      "Bash(taskkill //F //IM python.exe)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:8000/operators/1/qrcode\")",
+      "Bash(ipconfig)"
+    ]
+  }
+}

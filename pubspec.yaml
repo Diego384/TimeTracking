@@ -1,0 +1,50 @@
+name: time_tracking
+description: Registro ore lavorative per Cooperativa Oltre i Sogni
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Storage locale
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+  # State management
+  flutter_riverpod: ^2.5.1
+
+  # Calendario
+  table_calendar: ^3.1.2
+
+  # Internazionalizzazione (locale it_IT)
+  intl: ^0.19.0
+
+  # Report Excel
+  excel: ^4.0.6
+
+  # Invio email con allegato
+  flutter_email_sender: ^6.0.3
+
+  # Percorso file temporaneo
+  path_provider: ^2.1.4
+
+  # HTTP client per sync con server web
+  http: ^1.2.2
+
+  # Scanner QR code per configurazione app
+  mobile_scanner: ^6.0.2
+
+  # Icone extra
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
