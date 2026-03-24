@@ -209,7 +209,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                           const SizedBox(height: 12),
                           _buildField(
                             controller: _serverUrlCtrl,
-                            label: 'URL server (es. https://mioserver.com)',
+                            label: 'URL server (es. http://mioserver.com:8000)',
                             icon: Icons.cloud_outlined,
                             keyboardType: TextInputType.url,
                             capitalization: TextCapitalization.none,

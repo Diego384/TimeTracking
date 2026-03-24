@@ -1,6 +1,19 @@
 # time_tracking
 
-A new Flutter project.
+A Flutter time-tracking application for Cooperativa Oltre i Sogni.
+
+## Sync Port
+
+The web synchronisation feature communicates with a backend server via HTTP.
+The backend server (built with FastAPI/Uvicorn) listens on **port 8000** by default.
+
+When configuring the server URL in the app's setup screen, include the port in the URL:
+
+```
+http://<server-address>:8000
+```
+
+The app will POST data to `<server-url>/api/sync` using the API key provided.
 
 ## Getting Started
 
