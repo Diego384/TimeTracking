@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/operator_model.dart';
 import '../models/day_entry_model.dart';
 import '../models/comune_services_model.dart';
+import '../models/ore_contrattuali_model.dart';
 
 class SyncService {
   static Future<String> syncMonth({
@@ -75,6 +76,33 @@ class SyncService {
     } else {
       final data = jsonDecode(response.body);
       throw Exception(data['detail'] ?? 'Errore ${response.statusCode}');
+    }
+  }
+
+  static Future<OreContrattualiModel> fetchOreContrattuali({
+    required OperatorModel operator,
+  }) async {
+    final baseUrl = operator.serverUrl.trimRight().replaceAll(RegExp(r'/$'), '');
+    if (baseUrl.isEmpty) throw Exception('URL server non configurato');
+    if (operator.apiKey.isEmpty) throw Exception('API Key non configurata');
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/contract-hours'),
+      headers: {'X-API-Key': operator.apiKey},
+    ).timeout(const Duration(seconds: 30));
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return OreContrattualiModel.fromJson(data);
+    } else {
+      String detail;
+      try {
+        final data = jsonDecode(response.body);
+        detail = data['detail'] ?? 'Errore HTTP ${response.statusCode}';
+      } catch (_) {
+        detail = 'Errore HTTP ${response.statusCode}';
+      }
+      throw Exception(detail);
     }
   }
 }

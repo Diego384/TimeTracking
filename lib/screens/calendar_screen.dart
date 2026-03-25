@@ -14,6 +14,7 @@ import 'list_calendar_view.dart';
 import 'comune_services_view.dart';
 import '../providers/comune_services_provider.dart';
 import '../services/sync_service.dart';
+import 'ore_contrattuali_screen.dart';
 
 enum CalendarViewMode {
   mensile,
@@ -464,6 +465,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             icon: const Icon(Icons.cloud_upload_outlined),
             tooltip: 'Sincronizza con il web',
             onPressed: _showSyncDialog,
+          ),
+          IconButton(
+            icon: const Icon(Icons.event_note_outlined),
+            tooltip: 'Ore contrattuali',
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => OreContrattualiScreen(
+                  initialYear: _focusedDay.year, initialMonth: _focusedDay.month),
+            )),
           ),
           IconButton(
             icon: const Icon(Icons.send),
