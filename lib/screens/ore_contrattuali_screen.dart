@@ -6,6 +6,54 @@ import '../providers/ore_contrattuali_provider.dart';
 import '../providers/operator_provider.dart';
 import '../services/sync_service.dart';
 
+// ── Festività nazionali italiane ─────────────────────────────────────────────
+
+/// Calcola la data di Pasqua (algoritmo anonimo gregoriano).
+DateTime _calcolaPasqua(int year) {
+  final a = year % 19;
+  final b = year ~/ 100;
+  final c = year % 100;
+  final d = b ~/ 4;
+  final e = b % 4;
+  final f = (b + 8) ~/ 25;
+  final g = (b - f + 1) ~/ 3;
+  final h = (19 * a + b - d - g + 15) % 30;
+  final i = c ~/ 4;
+  final k = c % 4;
+  final l = (32 + 2 * e + 2 * i - h - k) % 7;
+  final m = (a + 11 * h + 22 * l) ~/ 451;
+  final month = (h + l - 7 * m + 114) ~/ 31;
+  final day = ((h + l - 7 * m + 114) % 31) + 1;
+  return DateTime(year, month, day);
+}
+
+/// Restituisce le festività italiane per l'anno dato.
+/// Chiave: "YYYY-MM-DD", valore: nome della festività.
+Map<String, String> festivitaItaliane(int year) {
+  final pasqua = _calcolaPasqua(year);
+  final pasquetta = pasqua.add(const Duration(days: 1));
+
+  String k(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  return {
+    '$year-01-01': 'Capodanno',
+    '$year-01-06': 'Epifania',
+    k(pasqua):     'Pasqua',
+    k(pasquetta):  'Pasquetta',
+    '$year-04-25': 'Liberazione',
+    '$year-05-01': 'Festa del Lavoro',
+    '$year-06-02': 'Rep. Italiana',
+    '$year-08-15': 'Ferragosto',
+    '$year-11-01': 'Ognissanti',
+    '$year-12-08': 'Immacolata',
+    '$year-12-25': 'Natale',
+    '$year-12-26': 'S. Stefano',
+  };
+}
+
+// ── Screen ───────────────────────────────────────────────────────────────────
+
 class OreContrattualiScreen extends ConsumerStatefulWidget {
   final int initialYear;
   final int initialMonth;
@@ -78,12 +126,24 @@ class _OreContrattualiScreenState extends ConsumerState<OreContrattualiScreen> {
   String _fmt(double v) =>
       v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(1);
 
-  /// Calcola il totale ore contrattuali per il mese corrente
   double _totaleDelMese(OreContrattualiModel schedule) {
     final daysInMonth = DateTime(_year, _month + 1, 0).day;
     double tot = 0;
     for (int d = 1; d <= daysInMonth; d++) {
       tot += schedule.orePerWeekday(DateTime(_year, _month, d).weekday);
+    }
+    return tot;
+  }
+
+  double _totaleFestivita(
+      OreContrattualiModel schedule, Map<String, String> festivita) {
+    double tot = 0;
+    for (final entry in festivita.entries) {
+      final parts = entry.key.split('-');
+      final d = DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+      if (d.year == _year && d.month == _month) {
+        tot += schedule.orePerWeekday(d.weekday);
+      }
     }
     return tot;
   }
@@ -154,8 +214,11 @@ class _OreContrattualiScreenState extends ConsumerState<OreContrattualiScreen> {
 
   Widget _buildContent(OreContrattualiModel schedule, String monthName) {
     final daysInMonth = DateTime(_year, _month + 1, 0).day;
-    final allDays = List.generate(daysInMonth, (i) => DateTime(_year, _month, i + 1));
+    final allDays =
+        List.generate(daysInMonth, (i) => DateTime(_year, _month, i + 1));
     final totMese = _totaleDelMese(schedule);
+    final festivita = festivitaItaliane(_year);
+    final totFestivita = _totaleFestivita(schedule, festivita);
 
     return Column(
       children: [
@@ -209,7 +272,7 @@ class _OreContrattualiScreenState extends ConsumerState<OreContrattualiScreen> {
         // ── Navigazione mese ─────────────────────────────────────────
         Container(
           color: const Color(0xFF1565C0).withValues(alpha: 0.08),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -231,6 +294,12 @@ class _OreContrattualiScreenState extends ConsumerState<OreContrattualiScreen> {
                     style: const TextStyle(
                         fontSize: 12, color: Color(0xFF1565C0)),
                   ),
+                  if (totFestivita > 0)
+                    Text(
+                      'di cui festività: ${_fmt(totFestivita)} h',
+                      style: TextStyle(
+                          fontSize: 11, color: Colors.amber.shade700),
+                    ),
                 ],
               ),
               IconButton(
@@ -255,7 +324,16 @@ class _OreContrattualiScreenState extends ConsumerState<OreContrattualiScreen> {
                         color: Colors.grey)),
               ),
               Expanded(
-                child: Text('ORE CONTRATT.',
+                flex: 2,
+                child: Text('FESTIVITÀ',
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey),
+                    textAlign: TextAlign.center),
+              ),
+              Expanded(
+                child: Text('ORE',
                     style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -274,8 +352,11 @@ class _OreContrattualiScreenState extends ConsumerState<OreContrattualiScreen> {
             separatorBuilder: (_, __) => const Divider(height: 1, indent: 16),
             itemBuilder: (context, i) {
               final day = allDays[i];
+              final key =
+                  '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
               final ore = schedule.orePerWeekday(day.weekday);
-              return _DayRow(date: day, ore: ore);
+              final nomeFesta = festivita[key];
+              return _DayRow(date: day, ore: ore, nomeFesta: nomeFesta);
             },
           ),
         ),
@@ -302,11 +383,14 @@ class _OreContrattualiScreenState extends ConsumerState<OreContrattualiScreen> {
   }
 }
 
+// ── Row singolo giorno ────────────────────────────────────────────────────────
+
 class _DayRow extends StatelessWidget {
   final DateTime date;
   final double ore;
+  final String? nomeFesta;
 
-  const _DayRow({required this.date, required this.ore});
+  const _DayRow({required this.date, required this.ore, this.nomeFesta});
 
   String _fmtOre(double v) =>
       v == 0 ? '-' : (v % 1 == 0 ? '${v.toInt()} h' : '${v.toStringAsFixed(1)} h');
@@ -316,23 +400,59 @@ class _DayRow extends StatelessWidget {
     final dayLabel = DateFormat('EEE d', 'it_IT').format(date);
     final isWeekend =
         date.weekday == DateTime.saturday || date.weekday == DateTime.sunday;
+    final isFesta = nomeFesta != null;
+
+    Color bgColor = Colors.transparent;
+    if (isFesta) {
+      bgColor = Colors.amber.shade50;
+    } else if (isWeekend) {
+      bgColor = Colors.grey.shade50;
+    }
 
     return Container(
-      color: isWeekend ? Colors.grey.shade50 : null,
+      color: bgColor,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
+          // Giorno
           Expanded(
             flex: 3,
+            child: Row(
+              children: [
+                if (isFesta)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Icon(Icons.star, size: 13, color: Colors.amber.shade700),
+                  ),
+                Text(
+                  dayLabel,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: isFesta
+                        ? Colors.amber.shade800
+                        : isWeekend
+                            ? Colors.red.shade400
+                            : Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Nome festività
+          Expanded(
+            flex: 2,
             child: Text(
-              dayLabel,
+              nomeFesta ?? '',
+              textAlign: TextAlign.center,
               style: TextStyle(
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
-                fontSize: 13,
-                color: isWeekend ? Colors.red.shade400 : Colors.black87,
+                color: Colors.amber.shade700,
               ),
             ),
           ),
+          // Ore contrattuali
           Expanded(
             child: Text(
               _fmtOre(ore),
@@ -340,7 +460,11 @@ class _DayRow extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: ore > 0 ? FontWeight.w600 : FontWeight.normal,
-                color: ore > 0 ? const Color(0xFF1565C0) : Colors.grey,
+                color: isFesta && ore > 0
+                    ? Colors.amber.shade800
+                    : ore > 0
+                        ? const Color(0xFF1565C0)
+                        : Colors.grey,
               ),
             ),
           ),

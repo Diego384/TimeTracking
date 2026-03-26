@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:io' as dart_io;
 import 'package:http/http.dart' as http;
 import '../models/operator_model.dart';
 import '../models/day_entry_model.dart';
 import '../models/comune_services_model.dart';
 import '../models/ore_contrattuali_model.dart';
+import '../models/operator_file_model.dart';
 
 class SyncService {
   static Future<String> syncMonth({
@@ -76,6 +78,111 @@ class SyncService {
     } else {
       final data = jsonDecode(response.body);
       throw Exception(data['detail'] ?? 'Errore ${response.statusCode}');
+    }
+  }
+
+  static Future<List<OperatorFileModel>> fetchFiles({
+    required OperatorModel operator,
+  }) async {
+    final baseUrl = operator.serverUrl.trimRight().replaceAll(RegExp(r'/$'), '');
+    if (baseUrl.isEmpty) throw Exception('URL server non configurato');
+    if (operator.apiKey.isEmpty) throw Exception('API Key non configurata');
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/files'),
+      headers: {'X-API-Key': operator.apiKey},
+    ).timeout(const Duration(seconds: 30));
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((e) => OperatorFileModel.fromJson(e as Map<String, dynamic>)).toList();
+    } else {
+      String detail;
+      try { detail = (jsonDecode(response.body))['detail'] ?? 'Errore ${response.statusCode}'; }
+      catch (_) { detail = 'Errore HTTP ${response.statusCode}'; }
+      throw Exception(detail);
+    }
+  }
+
+  static Future<void> uploadFile({
+    required OperatorModel operator,
+    required String filePath,
+    required String filename,
+    required String mimeType,
+    String description = '',
+  }) async {
+    final baseUrl = operator.serverUrl.trimRight().replaceAll(RegExp(r'/$'), '');
+    if (baseUrl.isEmpty) throw Exception('URL server non configurato');
+    if (operator.apiKey.isEmpty) throw Exception('API Key non configurata');
+
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/api/files/upload'),
+    );
+    request.headers['X-API-Key'] = operator.apiKey;
+    request.fields['description'] = description;
+    request.files.add(await http.MultipartFile.fromPath(
+      'file',
+      filePath,
+      filename: filename,
+    ));
+
+    final streamed = await request.send().timeout(const Duration(seconds: 60));
+    if (streamed.statusCode != 200) {
+      final body = await streamed.stream.bytesToString();
+      String detail;
+      try { detail = (jsonDecode(body))['detail'] ?? 'Errore ${streamed.statusCode}'; }
+      catch (_) { detail = 'Errore HTTP ${streamed.statusCode}'; }
+      throw Exception(detail);
+    }
+  }
+
+  static Future<String> downloadFile({
+    required OperatorModel operator,
+    required int fileId,
+    required String filename,
+    required String saveDir,
+  }) async {
+    final baseUrl = operator.serverUrl.trimRight().replaceAll(RegExp(r'/$'), '');
+    if (baseUrl.isEmpty) throw Exception('URL server non configurato');
+    if (operator.apiKey.isEmpty) throw Exception('API Key non configurata');
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/files/$fileId/download'),
+      headers: {'X-API-Key': operator.apiKey},
+    ).timeout(const Duration(seconds: 60));
+
+    if (response.statusCode == 200) {
+      final savePath = '$saveDir/$filename';
+      final file = dart_io.File(savePath);
+      await file.writeAsBytes(response.bodyBytes);
+      return savePath;
+    } else {
+      String detail;
+      try { detail = (jsonDecode(response.body))['detail'] ?? 'Errore ${response.statusCode}'; }
+      catch (_) { detail = 'Errore HTTP ${response.statusCode}'; }
+      throw Exception(detail);
+    }
+  }
+
+  static Future<void> deleteFile({
+    required OperatorModel operator,
+    required int fileId,
+  }) async {
+    final baseUrl = operator.serverUrl.trimRight().replaceAll(RegExp(r'/$'), '');
+    if (baseUrl.isEmpty) throw Exception('URL server non configurato');
+    if (operator.apiKey.isEmpty) throw Exception('API Key non configurata');
+
+    final response = await http.delete(
+      Uri.parse('$baseUrl/api/files/$fileId'),
+      headers: {'X-API-Key': operator.apiKey},
+    ).timeout(const Duration(seconds: 30));
+
+    if (response.statusCode != 200) {
+      String detail;
+      try { detail = (jsonDecode(response.body))['detail'] ?? 'Errore ${response.statusCode}'; }
+      catch (_) { detail = 'Errore HTTP ${response.statusCode}'; }
+      throw Exception(detail);
     }
   }
 

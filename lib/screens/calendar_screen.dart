@@ -15,6 +15,7 @@ import 'comune_services_view.dart';
 import '../providers/comune_services_provider.dart';
 import '../services/sync_service.dart';
 import 'ore_contrattuali_screen.dart';
+import 'files_screen.dart';
 
 enum CalendarViewMode {
   mensile,
@@ -35,7 +36,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   CalendarFormat _calendarFormat = CalendarFormat.month;
-  CalendarViewMode _viewMode = CalendarViewMode.mensile;
+  CalendarViewMode _viewMode = CalendarViewMode.listaMensile;
 
   @override
   void initState() {
@@ -118,103 +119,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   // ── Report ────────────────────────────────────────────────────────
-
-  Future<void> _showSendReportDialog() async {
-    final operator = ref.read(operatorProvider);
-    if (operator == null) return;
-
-    int selYear = _focusedDay.year;
-    int selMonth = _focusedDay.month;
-    final emailCtrl = TextEditingController(text: operator.email);
-
-    await showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDs) {
-          final label = DateFormat('MMMM yyyy', 'it_IT')
-              .format(DateTime(selYear, selMonth))
-              .toUpperCase();
-          return AlertDialog(
-            title: const Row(children: [
-              Icon(Icons.send, color: Color(0xFF1565C0)),
-              SizedBox(width: 8),
-              Text('Invia Report Mensile'),
-            ]),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Mese di riferimento:',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.chevron_left),
-                      onPressed: () => setDs(() {
-                        if (selMonth == 1) {
-                          selMonth = 12;
-                          selYear--;
-                        } else {
-                          selMonth--;
-                        }
-                      }),
-                    ),
-                    Text(label,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: Color(0xFF1565C0))),
-                    IconButton(
-                      icon: const Icon(Icons.chevron_right),
-                      onPressed: () => setDs(() {
-                        if (selMonth == 12) {
-                          selMonth = 1;
-                          selYear++;
-                        } else {
-                          selMonth++;
-                        }
-                      }),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: emailCtrl,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: 'Email destinatario',
-                    prefixIcon: const Icon(Icons.email_outlined,
-                        color: Color(0xFF1565C0)),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Annulla')),
-              FilledButton.icon(
-                icon: const Icon(Icons.send, size: 18),
-                label: const Text('Invia'),
-                style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF1565C0)),
-                onPressed: () async {
-                  final email = emailCtrl.text.trim();
-                  if (email.isEmpty) return;
-                  Navigator.pop(ctx);
-                  await _sendReport(
-                      year: selYear, month: selMonth, recipientEmail: email);
-                },
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
 
   Future<void> _sendReport({
     required int year,
@@ -310,6 +214,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
     int selYear = _focusedDay.year;
     int selMonth = _focusedDay.month;
+    final emailCtrl = TextEditingController(text: operator.email);
 
     await showDialog(
       context: context,
@@ -320,14 +225,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               .toUpperCase();
           return AlertDialog(
             title: const Row(children: [
-              Icon(Icons.cloud_upload, color: Color(0xFF1565C0)),
+              Icon(Icons.send, color: Color(0xFF1565C0)),
               SizedBox(width: 8),
-              Text('Sincronizza con il web'),
+              Text('Sincronizza / Invia Report'),
             ]),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Mese da sincronizzare:',
+                const Text('Mese di riferimento:',
                     style: TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 Row(
@@ -357,12 +262,35 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 const SizedBox(height: 8),
                 Text('Server: ${operator.serverUrl}',
                     style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    labelText: 'Email destinatario report',
+                    prefixIcon: const Icon(Icons.email_outlined,
+                        color: Color(0xFF1565C0)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
               ],
             ),
             actions: [
               TextButton(
                   onPressed: () => Navigator.pop(ctx),
                   child: const Text('Annulla')),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.send, size: 18),
+                label: const Text('Invia Report'),
+                onPressed: () async {
+                  final email = emailCtrl.text.trim();
+                  if (email.isEmpty) return;
+                  Navigator.pop(ctx);
+                  await _sendReport(
+                      year: selYear, month: selMonth, recipientEmail: email);
+                },
+              ),
               FilledButton.icon(
                 icon: const Icon(Icons.cloud_upload, size: 18),
                 label: const Text('Sincronizza'),
@@ -462,8 +390,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.cloud_upload_outlined),
-            tooltip: 'Sincronizza con il web',
+            icon: const Icon(Icons.send),
+            tooltip: 'Sincronizza / Invia report',
             onPressed: _showSyncDialog,
           ),
           IconButton(
@@ -475,17 +403,18 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             )),
           ),
           IconButton(
-            icon: const Icon(Icons.send),
-            tooltip: 'Invia report',
-            onPressed: _showSendReportDialog,
-          ),
-          IconButton(
             icon: const Icon(Icons.bar_chart),
             tooltip: 'Riepilogo mensile',
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(
               builder: (_) => MonthlySummaryScreen(
                   year: _focusedDay.year, month: _focusedDay.month),
             )),
+          ),
+          IconButton(
+            icon: const Icon(Icons.folder_outlined),
+            tooltip: 'Documenti',
+            onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const FilesScreen())),
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
@@ -508,7 +437,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(100),
+          preferredSize: const Size.fromHeight(68),
           child: _buildModeToggle(),
         ),
       ),
@@ -527,6 +456,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           : isListMode
               ? Column(children: [
                   _buildListNavBar(),
+                  _buildTotalsBar(entries),
                   Expanded(
                     child: ListCalendarView(
                       key: ValueKey(
@@ -551,24 +481,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Expanded(
-                  child: _modeChip(
-                CalendarViewMode.mensile,
-                Icons.calendar_month,
-                'Mensile',
-              )),
-              const SizedBox(width: 8),
-              Expanded(
-                  child: _modeChip(
-                CalendarViewMode.settimanale,
-                Icons.view_week,
-                'Settimanale',
-              )),
-            ],
-          ),
-          const SizedBox(height: 6),
           Row(
             children: [
               Expanded(
@@ -668,6 +580,55 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // ── Barra totali griglia ──────────────────────────────────────────
+
+  Widget _buildTotalsBar(Map<String, DayEntryModel> entries) {
+    final days = _viewMode == CalendarViewMode.listaMensile
+        ? _monthDays
+        : _weekDays;
+
+    double memo = 0, priv = 0, sost = 0;
+    for (final day in days) {
+      final k =
+          '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
+      final e = entries[k];
+      memo += e?.oreServiziMemofast ?? 0;
+      priv += e?.orePrivatiPulmino  ?? 0;
+      sost += e?.oreSostituzioni    ?? 0;
+    }
+    final tot = memo + priv + sost;
+
+    String f(double v) =>
+        v % 1 == 0 ? '${v.toInt()} h' : '${v.toStringAsFixed(1)} h';
+
+    return Container(
+      color: const Color(0xFF0D3C7A),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _totChip('TOTALE', f(tot), Colors.white),
+          _totChip('Memofast', f(memo), Colors.lightBlueAccent),
+          _totChip('Privati', f(priv), Colors.cyanAccent),
+          _totChip('Sost.', f(sost), const Color(0xFFADC6FF)),
+        ],
+      ),
+    );
+  }
+
+  Widget _totChip(String label, String value, Color color) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(value,
+            style: TextStyle(
+                color: color, fontWeight: FontWeight.bold, fontSize: 14)),
+        Text(label,
+            style: const TextStyle(color: Colors.white54, fontSize: 10)),
+      ],
     );
   }
 

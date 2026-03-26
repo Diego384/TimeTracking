@@ -353,6 +353,7 @@ class _ListCalendarViewState extends ConsumerState<ListCalendarView> {
   @override
   Widget build(BuildContext context) {
     final entries = ref.watch(entriesProvider);
+
     return Column(
       children: [
         _buildHeader(),
