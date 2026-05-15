@@ -13,6 +13,7 @@ void main() async {
   await Hive.openBox('entries');
   await Hive.openBox('comune_services');
   await Hive.openBox('ore_contrattuali');
+  await Hive.openBox('weekly_schedules');
   runApp(const ProviderScope(child: TimeTrackingApp()));
 }
 

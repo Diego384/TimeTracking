@@ -16,6 +16,7 @@ import '../providers/comune_services_provider.dart';
 import '../services/sync_service.dart';
 import 'ore_contrattuali_screen.dart';
 import 'files_screen.dart';
+import 'weekly_schedules_list_screen.dart';
 
 enum CalendarViewMode {
   mensile,
@@ -182,36 +183,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final operator = ref.read(operatorProvider);
     if (operator == null) return;
 
-    if (operator.serverUrl.isEmpty || operator.apiKey.isEmpty) {
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Row(children: [
-            Icon(Icons.cloud_off, color: Colors.orange),
-            SizedBox(width: 8),
-            Text('Sync non configurato'),
-          ]),
-          content: const Text(
-              'Configura URL server e API Key nel profilo per sincronizzare i dati.'),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Annulla')),
-            FilledButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SetupScreen()));
-              },
-              child: const Text('Vai al profilo'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
+    final hasServer = operator.serverUrl.isNotEmpty && operator.apiKey.isNotEmpty;
     int selYear = _focusedDay.year;
     int selMonth = _focusedDay.month;
     final emailCtrl = TextEditingController(text: operator.email);
@@ -224,10 +196,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               .format(DateTime(selYear, selMonth))
               .toUpperCase();
           return AlertDialog(
-            title: const Row(children: [
-              Icon(Icons.send, color: Color(0xFF1565C0)),
-              SizedBox(width: 8),
-              Text('Sincronizza / Invia Report'),
+            title: Row(children: [
+              Icon(hasServer ? Icons.send : Icons.send_outlined,
+                  color: const Color(0xFF1565C0)),
+              const SizedBox(width: 8),
+              Text(hasServer ? 'Sincronizza' : 'Invia Report'),
             ]),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -259,48 +232,53 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Text('Server: ${operator.serverUrl}',
-                    style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: emailCtrl,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: 'Email destinatario report',
-                    prefixIcon: const Icon(Icons.email_outlined,
-                        color: Color(0xFF1565C0)),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                if (hasServer) ...[
+                  const SizedBox(height: 4),
+                  Text('Server: ${operator.serverUrl}',
+                      style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                ] else ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: emailCtrl,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      labelText: 'Email destinatario report',
+                      prefixIcon: const Icon(Icons.email_outlined,
+                          color: Color(0xFF1565C0)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
             actions: [
               TextButton(
                   onPressed: () => Navigator.pop(ctx),
                   child: const Text('Annulla')),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.send, size: 18),
-                label: const Text('Invia Report'),
-                onPressed: () async {
-                  final email = emailCtrl.text.trim();
-                  if (email.isEmpty) return;
-                  Navigator.pop(ctx);
-                  await _sendReport(
-                      year: selYear, month: selMonth, recipientEmail: email);
-                },
-              ),
-              FilledButton.icon(
-                icon: const Icon(Icons.cloud_upload, size: 18),
-                label: const Text('Sincronizza'),
-                style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF1565C0)),
-                onPressed: () async {
-                  Navigator.pop(ctx);
-                  await _doSync(year: selYear, month: selMonth);
-                },
-              ),
+              if (!hasServer)
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.send, size: 18),
+                  label: const Text('Invia Report'),
+                  onPressed: () async {
+                    final email = emailCtrl.text.trim();
+                    if (email.isEmpty) return;
+                    Navigator.pop(ctx);
+                    await _sendReport(
+                        year: selYear, month: selMonth, recipientEmail: email);
+                  },
+                ),
+              if (hasServer)
+                FilledButton.icon(
+                  icon: const Icon(Icons.cloud_upload, size: 18),
+                  label: const Text('Sincronizza'),
+                  style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF1565C0)),
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await _doSync(year: selYear, month: selMonth);
+                  },
+                ),
             ],
           );
         },
@@ -416,6 +394,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const FilesScreen())),
           ),
+          IconButton(
+            icon: const Icon(Icons.grid_on),
+            tooltip: 'Griglie orarie',
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => const WeeklySchedulesListScreen())),
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (v) {
@@ -483,28 +467,38 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         children: [
           Row(
             children: [
-              Expanded(
-                  child: _modeChip(
-                CalendarViewMode.listaMensile,
-                Icons.table_rows,
-                'Griglia Mese',
-              )),
-              const SizedBox(width: 8),
-              Expanded(
-                  child: _modeChip(
-                CalendarViewMode.listaSettimanale,
-                Icons.view_list,
-                'Griglia Sett.',
-              )),
+              Expanded(child: _modeChip(CalendarViewMode.listaMensile, Icons.table_rows, 'Griglia Mese')),
+              const SizedBox(width: 6),
+              Expanded(child: _modeChip(CalendarViewMode.listaSettimanale, Icons.view_list, 'Griglia Sett.')),
+              const SizedBox(width: 6),
+              Expanded(child: _navChip(Icons.grid_on, 'Griglie Orarie',
+                () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WeeklySchedulesListScreen())))),
             ],
           ),
           const SizedBox(height: 6),
-          _modeChip(
-            CalendarViewMode.serviziComuni,
-            Icons.location_city,
-            'Servizi Comuni',
-          ),
+          _modeChip(CalendarViewMode.serviziComuni, Icons.location_city, 'Servizi Comuni'),
         ],
+      ),
+    );
+  }
+
+  Widget _navChip(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white24,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 14, color: Colors.white),
+            const SizedBox(width: 4),
+            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+          ],
+        ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import '../models/day_entry_model.dart';
 import '../models/comune_services_model.dart';
 import '../models/ore_contrattuali_model.dart';
 import '../models/operator_file_model.dart';
+import '../models/weekly_schedule_model.dart';
 
 class SyncService {
   static Future<String> syncMonth({
@@ -182,6 +183,93 @@ class SyncService {
       String detail;
       try { detail = (jsonDecode(response.body))['detail'] ?? 'Errore ${response.statusCode}'; }
       catch (_) { detail = 'Errore HTTP ${response.statusCode}'; }
+      throw Exception(detail);
+    }
+  }
+
+  static Future<void> syncWeeklySchedule({
+    required OperatorModel operator,
+    required WeeklyScheduleModel schedule,
+  }) async {
+    final baseUrl = operator.serverUrl.trimRight().replaceAll(RegExp(r'/$'), '');
+    if (baseUrl.isEmpty) throw Exception('URL server non configurato');
+    if (operator.apiKey.isEmpty) throw Exception('API Key non configurata');
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/weekly-schedule'),
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': operator.apiKey,
+      },
+      body: jsonEncode(schedule.toJson()),
+    ).timeout(const Duration(seconds: 30));
+
+    if (response.statusCode != 200) {
+      String detail;
+      try {
+        detail = (jsonDecode(response.body))['detail'] ??
+            'Errore ${response.statusCode}';
+      } catch (_) {
+        detail = 'Errore HTTP ${response.statusCode}';
+      }
+      throw Exception(detail);
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> fetchWeeklyScheduleList({
+    required OperatorModel operator,
+  }) async {
+    final baseUrl = operator.serverUrl.trimRight().replaceAll(RegExp(r'/$'), '');
+    if (baseUrl.isEmpty) throw Exception('URL server non configurato');
+    if (operator.apiKey.isEmpty) throw Exception('API Key non configurata');
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/weekly-schedule'),
+      headers: {'X-API-Key': operator.apiKey},
+    ).timeout(const Duration(seconds: 30));
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.cast<Map<String, dynamic>>();
+    } else {
+      String detail;
+      try {
+        detail = (jsonDecode(response.body))['detail'] ??
+            'Errore ${response.statusCode}';
+      } catch (_) {
+        detail = 'Errore HTTP ${response.statusCode}';
+      }
+      throw Exception(detail);
+    }
+  }
+
+  static Future<WeeklyScheduleModel> fetchWeeklySchedule({
+    required OperatorModel operator,
+    required DateTime weekStart,
+  }) async {
+    final baseUrl = operator.serverUrl.trimRight().replaceAll(RegExp(r'/$'), '');
+    if (baseUrl.isEmpty) throw Exception('URL server non configurato');
+    if (operator.apiKey.isEmpty) throw Exception('API Key non configurata');
+
+    final weekKey =
+        '${weekStart.year}-${weekStart.month.toString().padLeft(2, '0')}-${weekStart.day.toString().padLeft(2, '0')}';
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/weekly-schedule/$weekKey'),
+      headers: {'X-API-Key': operator.apiKey},
+    ).timeout(const Duration(seconds: 30));
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return WeeklyScheduleModel.fromJson(data);
+    } else {
+      String detail;
+      try {
+        detail = (jsonDecode(response.body))['detail'] ??
+            'Errore ${response.statusCode}';
+      } catch (_) {
+        detail = 'Errore HTTP ${response.statusCode}';
+      }
       throw Exception(detail);
     }
   }
